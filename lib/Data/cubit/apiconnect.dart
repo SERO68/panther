@@ -90,7 +90,6 @@ class EmployeeCubit extends Cubit<EmployeeState> {
       emit(EmployeeLoading());
       final updatedEmployee = await _apiService.updateEmployee(id, employee);
       emit(EmployeeUpdated(updatedEmployee));
-      // Refetch the list to update
       await fetchEmployees();
     } catch (e) {
       emit(EmployeeError(e.toString()));

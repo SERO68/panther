@@ -6,7 +6,12 @@ import 'package:flutter_joystick/flutter_joystick.dart';
 import '../../Theme/colors.dart';
 
 class CustomJoystick extends StatelessWidget {
-  const CustomJoystick({super.key});
+  final Function(double, double) onDirectionChanged;
+
+  const CustomJoystick({
+    super.key,
+    required this.onDirectionChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +26,7 @@ class CustomJoystick extends StatelessWidget {
         ),
       ),
       listener: (details) {
+        onDirectionChanged(details.x, details.y);
         log('Joystick direction: ${details.x}, ${details.y}');
       },
       mode: JoystickMode.all,

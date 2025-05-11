@@ -7,12 +7,12 @@ class IconTextWidget2 extends StatelessWidget {
   final TextStyle? textStyle;
 
   const IconTextWidget2({
-    Key? key,
+    super.key,
     required this.icon,
     required this.text,
     this.space = 8.0,
     this.textStyle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:panther/Routes/approutes.dart';
+import 'package:panther/core/routes/approutes.dart';
 
-import 'Routes/routefunc.dart';
-import 'Ui/Screens/homescreen.dart';
+import 'core/routes/routefunc.dart';
 
 void main() {  WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,13 +19,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
      
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute:  Approutename.home,
+      initialRoute:  Approutename.connecttion,
        onGenerateRoute: onGenerateRoute,
     );
   }

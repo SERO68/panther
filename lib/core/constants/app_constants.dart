@@ -1,3 +1,3 @@
 class Constants {
-  String apilink = '';
+  String apilink = 'http://panther.runasp.net/api/';
 }

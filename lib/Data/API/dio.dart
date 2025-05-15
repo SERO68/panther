@@ -11,7 +11,6 @@ class EmployeeApiService {
     ),
   );
 
-  // Create a new employee
   Future<Employee> createEmployee(Employee employee) async {
     try {
       final response = await _dio.post(
@@ -25,7 +24,6 @@ class EmployeeApiService {
     }
   }
 
-  // Get all employees
   Future<List<Employee>> getEmployees() async {
     try {
       final response = await _dio.get('Employees');
@@ -38,7 +36,6 @@ class EmployeeApiService {
     }
   }
 
-  // Get employee by ID
   Future<Employee> getEmployeeById(String id) async {
     try {
       final response = await _dio.get('Employees/$id');
@@ -49,7 +46,6 @@ class EmployeeApiService {
     }
   }
 
-  // Update employee
   Future<Employee> updateEmployee(String id, Employee employee) async {
     try {
       final response = await _dio.put(
@@ -63,7 +59,6 @@ class EmployeeApiService {
     }
   }
 
-  // Delete employee
   Future<void> deleteEmployee(String id) async {
     try {
       await _dio.delete('Employees/$id');
@@ -73,7 +68,6 @@ class EmployeeApiService {
     }
   }
 
-  // Record employee attendance
   Future<void> recordAttendance(String employeeId, DateTime attendanceTime) async {
     try {
       await _dio.post(
@@ -86,7 +80,6 @@ class EmployeeApiService {
     }
   }
 
-  // Get employee salary
   Future<double> getEmployeeSalary(String employeeId) async {
     try {
       final response = await _dio.get('EmployeeAttendances/$employeeId/salary');
@@ -97,7 +90,6 @@ class EmployeeApiService {
     }
   }
 
-  // Error handler
   void _handleError(DioException error) {
     String errorMessage = 'An unknown error occurred';
     

@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:panther/core/routes/approutes.dart';
-import 'package:panther/data/services/socket/socket_service.dart';
 import '../widgets/shiftcard.dart';
+import '../widgets/notificationcard.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -18,236 +16,412 @@ class _HomescreenState extends State<Homescreen> {
   bool notifi1 = true;
   bool notifi2 = true;
 
-  final SocketService _socketService = SocketService();
-  String? _userName;
-  String? _userId;
+  // Fixed user data
+  final String _userName = 'John Doe';
+  final String _userId = '12345';
   bool _isLoading = true;
-  List<Map<String, dynamic>> _shifts = [];
-  String _totalPaid = '0';
-  Timer? _reconnectTimer;
+  
+  // Fixed shifts data
+  final List<Map<String, dynamic>> _shifts = [
+    {
+      'completed': true,
+      'checkin': '09:00 AM',
+      'checkout': '05:00 PM',
+      'name': 'Morning Shift',
+      'payment': '160\$'
+    },
+    {
+      'completed': false,
+      'checkin': '06:00 PM',
+      'checkout': '12:00 AM',
+      'name': 'Evening Shift',
+      'payment': '120\$'
+    },
+    {
+      'completed': true,
+      'checkin': '08:00 AM',
+      'checkout': '03:00 PM',
+      'name': 'Day Shift',
+      'payment': '140\$'
+    }
+  ];
+  
+  // Fixed total paid amount
+  final String _totalPaid = '420';
+  // Fixed connection status for UI display
+  final bool _isConnected = true;
 
   @override
   void initState() {
     super.initState();
-    _setupSocketConnection();
-  }
-
-  void _setupSocketConnection() {
-    _socketService.connect();
-    _socketService.messageStream.listen((message) {
-      if (message.containsKey('type')) {
-        if (message['type'] == 'userData') {
-          setState(() {
-            _userName = message['data']['name'];
-            _userId = message['data']['id'];
-            _isLoading = false;
-          });
-        } else if (message['type'] == 'shiftsData') {
-          setState(() {
-            _shifts = List<Map<String, dynamic>>.from(message['data']['shifts']);
-            _totalPaid = message['data']['totalPaid'].toString();
-          });
-        } else if (message['type'] == 'connectionError') {
-          _scheduleReconnect();
-        }
-      }
-    });
-
-    // Request initial data
-    _socketService.sendMessage({'type': 'getUserData'});
-    _socketService.sendMessage({'type': 'getShifts'});
-  }
-
-  void _scheduleReconnect() {
-    // Cancel any existing timer
-    _reconnectTimer?.cancel();
-    
-    // Schedule reconnection attempt after 5 seconds
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+    // Simulate loading delay
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _setupSocketConnection();
+        setState(() {
+          _isLoading = false;
+        });
       }
     });
   }
 
   @override
   void dispose() {
-    _reconnectTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: _isLoading
+            ? Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 20),
+                    const Text('Loading data...'),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Please wait...',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  // Simulate data refresh
+                  return Future.delayed(const Duration(seconds: 1), () {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  });
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(25.0),
+                        child: Column(
                           children: [
-                            Text(
-                              'Welcome back,',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _userName ?? 'User',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.settings),
-                          onPressed: () {
-                            // Navigate to settings
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.attach_money,
-                              color: Colors.blue,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Total Earnings',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
+                            // Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      backgroundColor: Colors.white,
+                                      backgroundImage:
+                                          AssetImage("images/blacklogo.png"),
+                                      radius: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text("Welcome Mr",
+                                            style: TextStyle(fontSize: 14)),
+                                        Text(_userName ?? "Loading...",
+                                            style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$_totalPaid',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.pushNamed(
+                                            context, Approutename.control);
+                                      },
+                                      icon: const Icon(
+                                        Icons.control_camera_rounded,
+                                        color: Color(0xFF00ADDA),
+                                        size: 30,
+                                      ),
+                                    ),
+                                  
+                                    IconButton(
+                                      icon:
+                                          const Icon(Icons.power_settings_new),
+                                      color: Colors.red,
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title:
+                                                const Text('Disconnect Robot'),
+                                            content: const Text(
+                                                'Are you sure you want to disconnect?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context, '/');
+                                                },
+                                                style: TextButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.red),
+                                                child: const Text('Disconnect'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 25),
+                            const Divider(),
+                            const SizedBox(height: 16),
+
+                            // Connection Status
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: _isConnected
+                                    ? Colors.green.withOpacity(0.1)
+                                    : Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Recent Shifts',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // View all shifts
-                          },
-                          child: const Text('View All'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: _shifts.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons.work_off,
-                                    size: 48,
-                                    color: Colors.grey[400],
+                                    _isConnected
+                                        ? Icons.wifi
+                                        : Icons.wifi_off,
+                                    color: _isConnected
+                                        ? Colors.green
+                                        : Colors.red,
+                                    size: 16,
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'No shifts yet',
+                                    'Connection: ${_isConnected ? "Active" : "Inactive"}',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
+                                      color: _isConnected
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
-                            )
-                          : ListView.builder(
-                              itemCount: _shifts.length,
-                              itemBuilder: (context, index) {
-                                final shift = _shifts[index];
-                                return ShiftCard(
-                                  date: shift['date'] ?? 'Unknown date',
-                                  hours: shift['hours']?.toString() ?? '0',
-                                  amount: shift['amount']?.toString() ?? '0',
-                                );
-                              },
                             ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, Approutename.control);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+
+                            const SizedBox(height: 25),
+                            
+                            // Notifications Section
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "Notifications",
+                                style: TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            
+                            // Fixed notification card
+                            const NotificationCard(
+                              title: "Unauthorized access at Entrance B",
+                              message: "There is someone who trying to enter into the building",
+                              timestamp: "10:22 PM",
+                              icon: Icons.warning,
+                              iconColor: Colors.red,
+                              borderColor: Colors.red,
+                            ),
+                            
+                            // Second notification example
+                            const NotificationCard(
+                              title: "Battery Low",
+                              message: "Robot battery level is below 15%. Please connect to charger.",
+                              timestamp: "11:45 AM",
+                              icon: Icons.battery_alert,
+                              iconColor: Colors.orange,
+                              borderColor: Colors.orange,
+                            ),
+                            
+                            const SizedBox(height: 25),
+                            const Divider(),
+                            const SizedBox(height: 16),
+
+                            // Shifts Section
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "Shifts",
+                                style: TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            if (_shifts.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy,
+                                      size: 50,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'No shifts available',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      'Pull down to refresh',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              ...List.generate(
+                                _shifts.length,
+                                (index) {
+                                  final shift = _shifts[index];
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 5),
+                                    child: Shiftcard(
+                                      completed: shift['completed'] ?? false,
+                                      checkin: shift['checkin'] ?? 'N/A',
+                                      checkout: shift['checkout'] ?? 'N/A',
+                                      name: shift['name'] ?? 'Unknown',
+                                      payment: shift['payment'] ?? '0\$',
+                                    ),
+                                  );
+                                },
+                              ),
+
+                            const SizedBox(height: 25),
+                            const Divider(),
+                            const SizedBox(height: 16),
+
+                            // Reports Section
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "Reports",
+                                style: TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                reportcard(
+                                  icon: Icons.attach_money_outlined,
+                                  number: '$_totalPaid\$',
+                                  description: "Total paid",
+                                ),
+                              ],
+                            ),
+                            // Add some padding at the bottom for better scrolling
+                            const SizedBox(height: 50),
+                          ],
                         ),
-                      ),
-                      child: const Text(
-                        'Start New Shift',
-                        style: TextStyle(fontSize: 16),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+      ),
+    );
+  }
+}
+
+class reportcard extends StatelessWidget {
+  const reportcard({
+    super.key,
+    required this.icon,
+    required this.number,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String number;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 160,
+      width: 160,
+      child: Card(
+        color: const Color(0xFFF1F2F6),
+        elevation: 5,
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Colors.black),
+              const SizedBox(height: 10),
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      number,
+                      style: const TextStyle(
+                        fontSize: 35,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      description,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

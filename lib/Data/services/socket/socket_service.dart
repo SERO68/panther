@@ -17,7 +17,6 @@ class SocketService {
   Future<void> connect([String? ip]) async {
     if (_socket != null) return;
     
-    // If no IP is provided but we have a stored server IP, use that
     final serverIP = ip ?? _serverIP;
     if (serverIP == null) {
       print('Cannot connect: No IP address provided');
@@ -34,43 +33,68 @@ class SocketService {
       _serverIP = serverIP;
       print('Connected successfully');
 
-      _socket!.listen(
-        (List<int> data) {
-          final response = utf8.decode(data);
-          print('Received: $response');
-          _handleServerResponse(response);
-        },
-        onError: (error) {
-          print('Socket error: $error');
-          _messageController.addError(error);
-          disconnect();
-        },
-        onDone: () {
-          print('Socket closed');
-          disconnect();
-        },
-      );
+     // In SocketService, update the listen method:
+_socket!.listen(
+  (List<int> data) {
+    final response = utf8.decode(data);
+    print('Received: $response');
+    _handleServerResponse(response);
+  },
+  onError: (error) {
+    print('Socket error: $error');
+    _messageController.add({
+      'type': 'connectionError',
+      'message': error.toString()
+    });
+  },
+  onDone: () {
+    print('Socket closed');
+    _socket = null;
+    _messageController.add({
+      'type': 'connectionClosed',
+      'message': 'Connection closed by server'
+    });
+  },
+  cancelOnError: false,
+);
     } catch (e) {
       print('Connection error: $e');
       rethrow;
     }
   }
 
-  void _handleServerResponse(String response) {
-    try {
-      print('Handling response: $response');
-      // Try to parse as JSON
-      final jsonData = json.decode(response);
-      _messageController.add(jsonData);
-    } catch (e) {
-      print('Error parsing response: $e');
-      // If not valid JSON, send as a simple message
+void _handleServerResponse(String response) {
+  try {
+    print('Handling response: $response');
+    
+    // Check if this is a stats response
+    if (response.contains('CLOCK:') && response.contains('TEMP:') && response.contains('VOLT:')) {
+      // Parse stats response
       _messageController.add({
-        'type': 'message',
+        'type': 'stats',
         'content': response,
       });
+    } else {
+      // Try to parse as JSON
+      try {
+        final jsonData = json.decode(response);
+        _messageController.add(jsonData);
+      } catch (e) {
+        // If not valid JSON, send as a simple message
+        _messageController.add({
+          'type': 'message',
+          'content': response,
+        });
+      }
     }
+  } catch (e) {
+    print('Error parsing response: $e');
+    _messageController.add({
+      'type': 'error',
+      'content': response,
+    });
   }
+}
 
   void disconnect() {
     if (_socket != null) {
@@ -81,7 +105,7 @@ class SocketService {
     }
   }
 
-  void sendMessage(dynamic message) {
+   void sendMessage(dynamic message) {
     if (_socket != null) {
       String messageStr;
       if (message is Map) {

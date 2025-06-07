@@ -6,15 +6,16 @@ import '../../../core/theme/colors.dart';
 
 class CustomJoystick extends StatelessWidget {
   final Function(double, double) onDirectionChanged;
+  final Function onStickDragEnd;
 
   const CustomJoystick({
     super.key,
-    required this.onDirectionChanged,
+    required this.onDirectionChanged, required this.onStickDragEnd,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Joystick(
+    return Joystick( onStickDragEnd: onStickDragEnd,
       base: JoystickBase(
         decoration: JoystickBaseDecoration(
           color: Colors.black,
